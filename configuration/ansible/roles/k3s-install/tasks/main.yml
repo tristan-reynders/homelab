@@ -1,0 +1,57 @@
+---
+- name: Disable swap
+  when: ansible_swaptotal_mb > 0
+  become: true
+  lineinfile:
+    path: /etc/dphys-swapfile
+    regexp: '^#?CONF_SWAPSIZE='
+    line: 'CONF_SWAPSIZE=0'
+
+- name: Check if Cgroups parameters are already in cmdline.txt
+  shell: grep "cgroup_memory=1 cgroup_enable=memory" /boot/firmware/cmdline.txt
+  register: cgroups_present
+  changed_when: false
+  failed_when: false
+
+- name: Enable Cgroups
+  when: cgroups_present.rc != 0
+  become: true
+  lineinfile:
+    path: "/boot/firmware/cmdline.txt"
+    backrefs: true
+    regexp: '^(.*?(?<!cgroup_memory=1 cgroup_enable=memory).*)$'
+    line: '\1 cgroup_memory=1 cgroup_enable=memory'
+  register: cgroups_modified
+
+- name: Reboot system if cgroups were modified
+  when: cgroups_modified.changed
+  become: true
+  ansible.builtin.reboot:
+    reboot_timeout: 120
+
+- name: Check if K3s is already installed
+  stat:
+    path: /usr/local/bin/k3s
+  register: k3s_binary
+
+- name: Install K3s
+  when: not k3s_binary.stat.exists
+  become: true
+  shell: |
+    curl -sfL https://get.k3s.io | sh -
+  environment:
+    INSTALL_K3S_EXEC: "--write-kubeconfig-mode 644"
+
+- name: Ensure K3s service is enabled and started
+  become: true
+  systemd:
+    name: k3s
+    state: started
+    enabled: yes
+
+- name: Copy K3s kubeconfig to local machine
+  become: true
+  fetch:
+    src: /etc/rancher/k3s/k3s.yaml
+    dest: ~/.kube/k3s-config.yaml
+    flat: yes

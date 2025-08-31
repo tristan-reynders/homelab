@@ -1,0 +1,5 @@
+- name: Ansible playbook to install and configure K3s
+  hosts: pi
+  become: true
+  roles:
+    - k3s-install
