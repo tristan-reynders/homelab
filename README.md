@@ -19,4 +19,6 @@ I created this homelab to deepen my understanding of Kubernetes by:
 
 The Pi is compact, energy-efficient, and perfect for a budget-friendly homelab, though it requires careful resource management for Kubernetes workloads.
 
+## 🛠️ Configuration
 
+For detailed instructions on setting up the Raspberry Pi, configuring SSH, setting up Ansible, installing K3s and mounting an external drive, refer to the [configuration guide](/configuration/README.md). This guide provides step-by-step commands and best practices to replicate the homelab setup.
